@@ -1,9 +1,11 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from datetime import datetime
+from typing import List
 
 app = FastAPI()
 
-# Allow frontend to connect
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,20 +14,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-notes = []
+class Job(BaseModel):
+    id: int
+    title: str
+    company: str
+    location: str
+    description: str
+    posted_at: datetime
 
-@app.get("/notes")
-def get_notes():
-    return notes
+jobs_db: List[Job] = []
 
-@app.post("/notes")
-def add_note(note: dict):
-    notes.append(note)
-    return {"message": "Note added"}
+@app.get("/jobs")
+def get_jobs():
+    return jobs_db
 
-@app.delete("/notes/{note_id}")
-def delete_note(note_id: int):
-    if 0 <= note_id < len(notes):
-        notes.pop(note_id)
-        return {"message": "Note deleted"}
-    return {"error": "Invalid note ID"}
+@app.post("/jobs")
+def create_job(job: Job):
+    jobs_db.append(job)
+    return {"message": "Job posted successfully"}
+
+@app.delete("/jobs/{job_id}")
+def delete_job(job_id: int):
+    global jobs_db
+    jobs_db = [job for job in jobs_db if job.id != job_id]
+    return {"message": "Job deleted"}
